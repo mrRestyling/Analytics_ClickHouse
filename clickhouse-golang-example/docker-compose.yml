@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: yandex/clickhouse-server:21.7
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=secret
+      - CLICKHOUSE_DATABASE=default
+    volumes:
+      - ./data:/var/lib/clickhouse2
+    ports:
+      - "8123:8123"
+    restart: always
