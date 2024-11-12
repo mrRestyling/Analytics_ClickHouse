@@ -22,17 +22,18 @@ func main() {
 
 	for {
 
-		Post(url, data)
+		if err := Post(url, data); err != nil {
+			log.Println("Ошибка отправки запроса:", err)
+		}
 		time.Sleep(1 * time.Second)
 
 	}
 
 }
 
-func Post(url string, data Data) {
+func Post(url string, data Data) error {
 
 	jsonData, err := json.Marshal(data)
-
 	if err != nil {
 		log.Println("Ошибка конвертации в json", err)
 	}
@@ -47,30 +48,31 @@ func Post(url string, data Data) {
 	req.Header.Set("Content-Type", "application/json")
 
 	// Отправка запроса
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println("Ошибка отправки запроса", err)
-	}
+	for {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Println("Сервер недоступен")
+			time.Sleep(1 * time.Second)
+			continue
+		}
 
-	// Чтение ответа от сервера
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		// Чтение ответа от сервера
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("ошибка чтения ответа: %v", err)
+		}
 
-	// Декодирование ответа из JSON
-	var response struct {
-		Sum int `json:"sum"`
-	}
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		// Декодирование ответа из JSON
+		var response struct {
+			Sum int `json:"sum"`
+		}
+		if err := json.Unmarshal(body, &response); err != nil {
+			return fmt.Errorf("ошибка декодирования ответа: %v", err)
+		}
 
-	// Вывод ответа от сервера
-	fmt.Println("Ответ от сервера:", response.Sum)
+		fmt.Println("Ответ от сервера:", response.Sum)
+		return nil
+	}
 
 }
