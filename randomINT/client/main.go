@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -56,14 +56,16 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	for {
-
-		if err := Post(ctx, url, data, ch, q.Name); err != nil {
-			log.Println("Ошибка отправки запроса:", err)
+	go func() {
+		for {
+			if err := Post(ctx, url, data, ch, q.Name); err != nil {
+				log.Println("Ошибка отправки запроса:", err)
+			}
+			time.Sleep(1 * time.Second)
 		}
-		time.Sleep(1 * time.Second)
+	}()
 
-	}
+	select {}
 
 }
 
@@ -94,7 +96,7 @@ func Post(ctx context.Context, url string, data Data, ch *amqp.Channel, queueNam
 
 		// Чтение ответа от сервера
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("ошибка чтения ответа: %v", err)
 		}

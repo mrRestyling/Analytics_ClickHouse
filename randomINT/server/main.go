@@ -15,7 +15,7 @@ type Numbers struct {
 }
 
 type ResponseSum struct {
-	Sum int `json:"sum"`
+	SumR int `json:"sum"`
 }
 
 func main() {
@@ -32,20 +32,19 @@ func Sum(w http.ResponseWriter, r *http.Request) {
 	numReq := Numbers{}
 
 	err := json.NewDecoder(r.Body).Decode(&numReq)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// sum := numReq.Num1 + numReq.Num2
-
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	sum := rand.Intn(10)
+	randINT := rand.Intn(10)
+
+	result := randINT + numReq.Num1 + numReq.Num2
 
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(ResponseSum{Sum: sum})
+	json.NewEncoder(w).Encode(ResponseSum{SumR: result})
 
 }
