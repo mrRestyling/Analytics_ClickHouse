@@ -1,6 +1,14 @@
-version: '3.8'
-
+version: '3'
 services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+      - ./rabbitmq/logs/:/var/log/rabbitmq/
+      
   clickhouse:
     image: yandex/clickhouse-server:21.7
     environment:

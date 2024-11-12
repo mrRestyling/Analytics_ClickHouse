@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Data struct {
@@ -20,9 +23,42 @@ func main() {
 	url := "http://localhost:8080/"
 	data := Data{Num1: 665, Num2: 1}
 
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		log.Fatal("Failed to connect to RabbitMQ", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatal("Failed to open a channel", err)
+	}
+	defer ch.Close()
+
+	// Declare a queue
+	q, err := ch.QueueDeclare(
+		"RandomINT", // name
+		true,        // durable
+		false,       // delete when unused
+		false,       // exclusive
+		false,       // no-wait
+		nil,         // arguments
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = ch.Qos(2, 0, false)
+	if err != nil {
+		log.Fatal("err")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	for {
 
-		if err := Post(url, data); err != nil {
+		if err := Post(ctx, url, data, ch, q.Name); err != nil {
 			log.Println("Ошибка отправки запроса:", err)
 		}
 		time.Sleep(1 * time.Second)
@@ -31,7 +67,7 @@ func main() {
 
 }
 
-func Post(url string, data Data) error {
+func Post(ctx context.Context, url string, data Data, ch *amqp.Channel, queueName string) error {
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -63,7 +99,7 @@ func Post(url string, data Data) error {
 			return fmt.Errorf("ошибка чтения ответа: %v", err)
 		}
 
-		// Декодирование ответа из JSON
+		// Decode the response from JSON
 		var response struct {
 			Sum int `json:"sum"`
 		}
@@ -71,8 +107,22 @@ func Post(url string, data Data) error {
 			return fmt.Errorf("ошибка декодирования ответа: %v", err)
 		}
 
+		// Send the response to the RabbitMQ queue
+		err = ch.PublishWithContext(ctx,
+			"",        // exchange
+			queueName, // routing key
+			false,     // mandatory
+			false,     // immediate
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body:        []byte(fmt.Sprintf("%d", response.Sum)),
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("ошибка отправки ответа в RabbitMQ: %v", err)
+		}
+
 		fmt.Println("Ответ от сервера:", response.Sum)
 		return nil
 	}
-
 }
