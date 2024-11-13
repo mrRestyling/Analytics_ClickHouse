@@ -16,9 +16,28 @@ services:
     environment:
       - CLICKHOUSE_USER=default
       - CLICKHOUSE_PASSWORD=secret
-      - CLICKHOUSE_DATABASE=default
+      - CLICKHOUSE_DATABASE=storageRANDOM
     volumes:
       - ./data:/var/lib/clickhouse2
+      - ./migrations/init_rand_table.sql:/docker-entrypoint-initdb.d/init_rand_table.sql
     ports:
       - "8123:8123"
+      - "19000:9000"
     restart: always
+
+
+    #   clickhouse:
+    # image: clickhouse/clickhouse-server:latest
+    # container_name: CH-randonINT
+    # environment:
+    #   - CLICKHOUSE_USER=default
+    #   - CLICKHOUSE_PASSWORD=secret
+    #   # - CLICKHOUSE_DATABASE=default
+    # volumes:
+    #   - ./data:/var/lib/clickhouse2
+    #   - ./migrations/init_rand_table.sql:/docker-entrypoint-initdb.d/init_rand_table.sql
+    # ports:
+    #   - "8123:8123"
+    #   - "19000:9000"
+    # restart: always
+

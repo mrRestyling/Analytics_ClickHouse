@@ -1,17 +1,32 @@
 package main
 
 import (
+	chDB "calcServ/dataClient/CH"
 	rabbitmq "calcServ/dataClient/RMQ"
+	"context"
 	"log"
 )
 
 func main() {
 
-	conn, err := rabbitmq.Dial("amqp://guest:guest@localhost:5672/")
-	fail(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	connDB, err := chDB.ConnectDB()
+	fail(err, "Failed to connect to ClickHouse")
 
-	ch, err := rabbitmq.OpenChannel(conn)
+	db := chDB.New(connDB)
+
+	//
+	//
+	//
+	//
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	connRMQ, err := rabbitmq.Dial("amqp://guest:guest@localhost:5672/")
+	fail(err, "Failed to connect to RabbitMQ")
+	defer connRMQ.Close()
+
+	ch, err := rabbitmq.OpenChannel(connRMQ)
 	fail(err, "Failed to open a channel")
 	defer ch.Close()
 
@@ -24,12 +39,16 @@ func main() {
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
+			err = db.Push(ctx, d.Body)
 		}
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	var forever chan struct{}
 	<-forever
+
+	err = db.Db.Close()
+	fail(err, "Failed to close connection to ClickHouse")
 }
 
 func fail(err error, msg string) {
