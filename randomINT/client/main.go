@@ -90,7 +90,7 @@ func Post(ctx context.Context, url string, data Data, ch *amqp.Channel, queueNam
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.Println("Сервер недоступен")
-			time.Sleep(1 * time.Second)
+			time.Sleep(5 * time.Second)
 			continue
 		}
 
