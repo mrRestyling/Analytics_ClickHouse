@@ -14,11 +14,6 @@ func main() {
 
 	db := chDB.New(connDB)
 
-	//
-	//
-	//
-	//
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
