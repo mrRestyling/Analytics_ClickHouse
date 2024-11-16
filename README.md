@@ -1,6 +1,6 @@
 # ClickHouseTutorial 
 
 
-## randomINT
+## RandomINT
 
 
