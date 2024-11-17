@@ -1,4 +1,4 @@
-# ClickHouseTutorial o
+# ClickHouseTutorial 
 
 
 ## RandomINT 
